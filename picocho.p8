@@ -12,6 +12,7 @@ function _init()
 	mode="start"
 	blinkt=0
 	startspr=32
+	shipbcount=0
 	
 		--stars
 	stars={}
@@ -137,15 +138,12 @@ function blink()
 	return blinkanim[blinkt]
 end
 
-function shipblink(bcount)
-	local shipblink={
-		false,false,5
-	}
+function svisible()
+	if ship.invulnerable==false do
+		return true
+	end
 	
-	local a=(#shipblink+bcount)
-		%#shipblink
-	
-	return shipblink[myspr]
+	return shipbcount%3!=0
 end
 
 function drawmyspr(myspr)
@@ -244,6 +242,16 @@ function update_game()
 	ship.x+=ship.sx
 	ship.y+=ship.sy
 	
+	--ship blink/invulnerable
+	if ship.invulnerable do
+		if shipbcount>35 do
+			shipbcount=0
+			ship.invulnerable=false
+		else
+			shipbcount+=1
+		end
+	end
+	
 	--checking bounds
 	if ship.x>120 then
 		ship.x=0
@@ -302,8 +310,9 @@ function update_game()
 	
 	--check collision ship x enemy
 	for myenemy in all(enemies) do
-		if coll(myenemy,ship) then
-			--lives-=1
+		if ship.invulnerable==false
+			and coll(myenemy,ship) then
+			lives-=1
 			sfx(3)
 			ship.invulnerable=true
 		end
@@ -362,11 +371,11 @@ end
 function draw_game()
 	cls(0)
 	starfield()
-	if ship.invulnerable==false do
+	if svisible() do
 		drawmyspr(ship)
 	end
 	
-	if ship.invulnerable==false do
+	if svisible() do
 		spr(flamespr,ship.x,ship.y+5)
 	end
 	
