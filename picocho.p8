@@ -58,9 +58,8 @@ function start_game()
 		y=90,
 		sx=2,
 		sy=2,
-		invulnerable=false
+		invul=0
 	}
-	shipbcount=0
 	shootfrqc=0
 
 	--sprites
@@ -73,29 +72,15 @@ function start_game()
 	muzzle=0
 	
 	--ui
-	score=3000
-	lives=2
+	score=0
+	lives=3
 	
 	--bullets
 	bullets={}
 	--enemies
 	enemytypes={"green","red"}
-	totenemies=5
 	enemies={}
-	for i=1,totenemies do
-		local entype=enemytypes[
-				flr(rnd(2)+1)
-			]
-		local enemy={
-			x=rnd(120)-10,
-			y=-8-(rnd(220)),
-			type=entype,
-			spr=enemyspr(entype),
-			sx=enemyspd(entype,"x"),		
-			sy=enemyspd(entype,"y")
-		}
-	add(enemies,enemy)
-	end
+	spawnenemies(5)
 	
 end --start_game
 -->8
@@ -140,11 +125,11 @@ function blink()
 end
 
 function svisible()
-	if ship.invulnerable==false do
+	if ship.invul<=0 do
 		return true
 	end
 	
-	return shipbcount%3!=0
+	return ship.invul%5!=0
 end
 
 function shoot()
@@ -214,6 +199,22 @@ function coll(a,b)
 	return true
 end
 
+function spawnenemies(total)
+	for i=1,total do
+		local entype=enemytypes[
+				flr(rnd(2)+1)
+			]
+		local enemy={
+			x=rnd(100)+10,
+			y=-8-(rnd(250)),
+			type=entype,
+			spr=enemyspr(entype),
+			sx=enemyspd(entype,"x"),		
+			sy=enemyspd(entype,"y")
+		}
+	add(enemies,enemy)
+	end
+end
 -->8
 --update
 function update_game()
@@ -249,16 +250,7 @@ function update_game()
 	--moving the ship
 	ship.x+=ship.sx
 	ship.y+=ship.sy
-	
-	--ship blink/invulnerable
-	if ship.invulnerable do
-		if shipbcount>35 do
-			shipbcount=0
-			ship.invulnerable=false
-		else
-			shipbcount+=1
-		end
-	end
+	ship.invul-=1
 	
 	--checking bounds
 	if ship.x>120 then
@@ -306,8 +298,10 @@ function update_game()
 			end
 		end	
 		
+		--enemy leaves screen
 		if myenemy.y>128 then
 		 del(enemies,myenemy)
+		 spawnenemies(1)
 		end
 		if myenemy.x>128 then
 			myenemy.x=0
@@ -318,11 +312,11 @@ function update_game()
 	
 	--check collision ship x enemy
 	for myenemy in all(enemies) do
-		if ship.invulnerable==false
+		if ship.invul<=0
 			and coll(myenemy,ship) then
 			lives-=1
 			sfx(3)
-			ship.invulnerable=true
+			ship.invul=35
 		end
 		--check collision
 		--bullet x enemy
