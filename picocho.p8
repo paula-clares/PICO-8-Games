@@ -12,7 +12,6 @@ function _init()
 	mode="start"
 	blinkt=0
 	startspr=32
-	shipbcount=0
 	
 		--stars
 	stars={}
@@ -61,6 +60,8 @@ function start_game()
 		sy=2,
 		invulnerable=false
 	}
+	shipbcount=0
+	shootfrqc=0
 
 	--sprites
 	shipspr=0
@@ -146,6 +147,19 @@ function svisible()
 	return shipbcount%3!=0
 end
 
+function shoot()
+	if shootfrqc%8==0 then
+		local newbul={
+			x=ship.x,
+			y=ship.y-3,
+			spr=16
+		}
+		add(bullets,newbul)
+		sfx(0)
+		muzzle=5
+	end
+end
+
 function drawmyspr(myspr)
 	spr(myspr.spr,myspr.x,myspr.y)
 end
@@ -227,16 +241,10 @@ function update_game()
 		ship.sy=2
 	end
 	
-	if btnp(5) then
-		local newbul={
-			x=ship.x,
-			y=ship.y-3,
-			spr=16
-		}
-		add(bullets,newbul)
-		sfx(0)
-		muzzle=5
+	if btn(5) then
+		shoot()
 	end
+	shootfrqc+=1
 		
 	--moving the ship
 	ship.x+=ship.sx
