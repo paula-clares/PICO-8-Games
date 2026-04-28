@@ -21,6 +21,7 @@ function _init()
 	blinkt=0
 	startspr=32
 	startscreen()
+	storeintrotime=45
 	
 		--stars
 	stars={}
@@ -46,6 +47,8 @@ function _draw()
 		draw_waveintro()
 	elseif mode=="store" then
 		draw_store()
+	elseif mode=="storeintro" then
+		draw_storeintro()
 	elseif mode=="over" then
 		draw_over()
 	elseif mode=="win" then
@@ -64,6 +67,8 @@ function _update()
 		update_waveintro()
 	elseif mode=="store" then
 		update_store()
+	elseif mode=="storeintro" then
+		update_storeintro()
 	elseif mode=="over" then
 		update_over()
 	elseif mode=="win" then
@@ -475,7 +480,8 @@ function update_game()
 						if wave%5==0 then
 							--if wave 5 if finished,
 							--enter store
-							init_store()
+							--init_store()
+							mode="storeintro"
 						else
 							nextwave()
 						end
@@ -565,13 +571,21 @@ function update_store()
 	end
 	
 	if btnp(🅾️) then
-		option=4
+		option=#options
 	end 
 	
 	if option<1 then
 		option=1
-	elseif option>4 then
-		option=4
+	elseif option>#options then
+		option=#options
+	end
+end
+
+function update_storeintro()
+	update_game()
+	storeintrotime-=1
+	if storeintrotime<0 then
+		init_store()
 	end
 end
 -->8
@@ -697,7 +711,7 @@ end
 function draw_waveintro()
 	draw_game()
 	print(
-		"wave "..wave,57,50,blink())
+		"wave "..wave,57,60,blink())
 end
 
 function draw_win()
@@ -711,7 +725,15 @@ end
 
 function draw_store()
 	cls(2)
+	print("score:"..score,1,1,12)
 	drawoptions()
+end
+
+function draw_storeintro()
+	draw_game()
+	print(
+		"cool! entering store..."
+		,20,60,blink())
 end
 -->8
 -- waves and enemies
@@ -803,12 +825,14 @@ function init_store()
 	cls(2)
 	mode="store"
 	items={}
-	focus={x=0,y=0,visible=false}
 	option=4
 	options={
-		{act="item",spr=25,x=20,y=30},
-		{act="item",spr=25,x=55,y=30},
-		{act="item",spr=25,x=90,y=30},
+		{act="item",spr=25,x=20,y=30,
+			cost=10,desc="dash"},
+		{act="item",spr=25,x=55,y=30,
+			cost=10,desc="dash"},
+		{act="item",spr=25,x=90,y=30,
+			cost=10,desc="dash"},
 		{act="continue",x=90,y=120,
 		w=1,h=1}
 	}
@@ -816,6 +840,7 @@ end
 
 function exit_store()
 	mode="game"
+	storeintrotime=45
 	nextwave()
 end
 
@@ -827,6 +852,8 @@ function drawoptions()
 				spr(23, v.x-8, v.y, 1, 2,
 					true)
 				spr(23, v.x+16, v.y, 1, 2)
+				print(v.cost,v.x+4,v.y+17)
+				print(v.desc,v.x-8,v.y+30)
 			end
 		end
 		if v.act=="continue" then
@@ -841,9 +868,17 @@ function drawoptions()
 end
 
 function selectoption()
-	if options[option].act
-		=="continue" then
-			exit_store()
+local selopt=options[option]
+	if selopt.act=="continue" then
+		exit_store()
+	elseif selopt.act=="item" then
+		--buy item (or try)
+		if score>=selopt.cost then
+			score-=selopt.cost
+			del(options,selopt)
+			option=#options
+		else	
+		end 
 	end
 end
 __gfx__
