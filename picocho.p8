@@ -95,8 +95,7 @@ function start_game()
 		sprw=1,
 		sprh=1,	
 		invul=0,
-		bultimer=8,
-		scndskillcd=0
+		bultimer=8
 	}
 
 	--sprites
@@ -384,7 +383,7 @@ function update_game()
 	if btn(🅾️) then
 		--scndact()
 		if scndskill do
-			scndskill()
+			scndskill:use()
 		end
 	end
 		
@@ -396,7 +395,7 @@ function update_game()
 	-- reduce second skill
 	-- cooldown if it's running
  if scndskill then
-   scndskill:updatecd()
+   scndskill:update()
  end
 	
 	--checking bounds
@@ -608,10 +607,14 @@ end
 function draw_game()
 	cls(0)
 	starfield()
+	if scndskill then
+   scndskill:drawupdate()
+ end
 	if svisible() do
 		drawmyspr(ship)
 		spr(flamespr,ship.x,ship.y+5)
 	end
+
 	
 	--bullets
 	for mybul in all(bullets) do
@@ -916,23 +919,82 @@ items={
 		act="item",spr=25,x=55,
 		y=30,cost=10,desc="dash",
 		cooldown=0,
+		duration=0,
+		parts={},
+		newpart=function(self)
+			local newpart={
+				x=(rnd()-.5)*15 +ship.x+3,
+				y=(rnd()-.5)*15 +ship.y+3,
+				sx=ship.sx,
+				sy=ship.sy,
+				age=0,
+				maxage=rnd(3)+1,
+				size=20
+			}
+			add(self.parts,newpart)
+		end,
 		use=function(self)
-			if self.cooldown==0 then
+			if self.cooldown<=0 then
 				ship.smultip=2
-				self.cooldown=20
+				self.duration=60
+				if count(self.parts)<=0 then
+					for i=1,10 do
+						self:newpart()
+				end
+			end
 			end
 		end
 		,
-		updatecd=function(self)
+		update=function(self)
 			if self.cooldown>0 then
 				self.cooldown-=1
 				if self.cooldown<=0 then
-					self.finish()
+					--draw indication
 				end
 			end
-		end,
-		finish=function()
+			
+			if self.duration>0 then
+				self.duration-=1
+				if self.duration<=0 then
+					self:finish()
+				end
+			end
+		end
+		,
+		finish=function(self)
 			ship.smultip=1
+			self.cooldown=120
+			self.parts={}
+		end
+		,
+		drawupdate=function(self)
+			for mypa in all(self.parts)
+				do
+				mypa.age+=1
+				mypa.sx*=.999
+				mypa.sy*=.999
+				mypa.x+=mypa.sx
+				mypa.y+=mypa.sy
+				if mypa.age>=mypa.maxage then
+					del(self.parts,mypa)
+				end
+				local col=7
+				if mypa.age<=mypa.maxage/2 then
+					col=6
+				end
+				line(mypa.x,
+					mypa.y,
+					mypa.x-(mypa.sx),
+					mypa.y-(mypa.sy),
+					col)
+			end
+			--add half missing parts
+			if self.duration>0 then
+				for i=1,5-#self.parts do
+					self:newpart()
+				end
+			end
+			
 		end
 		}
 }
