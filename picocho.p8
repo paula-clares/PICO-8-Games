@@ -6,7 +6,6 @@ __lua__
 - flexible collision detection
 	(for bigger sprites)
 - more enemies
-- "store" between waves
 - buffs posibilities
 --]]
 
@@ -92,10 +91,12 @@ function start_game()
 		y=90,
 		sx=2,
 		sy=2,
+		smultip=1,
 		sprw=1,
 		sprh=1,	
 		invul=0,
-		bultimer=8
+		bultimer=8,
+		scndskillcd=0
 	}
 
 	--sprites
@@ -359,21 +360,21 @@ function update_game()
 	ship.spr=0
 	
 	if btn(⬅️) then
-		ship.sx=-2
+		ship.sx=-2*ship.smultip
 		ship.spr=1
 	end
 	
 	if btn(➡️) then
-		ship.sx=2
+		ship.sx=2*ship.smultip
 		ship.spr=2
 	end
 	
 	if btn(⬆️) then
-		ship.sy=-2
+		ship.sy=-2*ship.smultip
 	end
 
 	if btn(⬇️) then
-		ship.sy=2
+		ship.sy=2*ship.smultip
 	end
 	
 	if btn(❎) then
@@ -381,7 +382,10 @@ function update_game()
 	end
 	
 	if btn(🅾️) then
-		
+		--scndact()
+		if scndskill do
+			scndskill()
+		end
 	end
 		
 	--update ship
@@ -389,6 +393,11 @@ function update_game()
 	ship.y+=ship.sy
 	ship.invul-=1
 	ship.bultimer-=1
+	-- reduce second skill
+	-- cooldown if it's running
+ if scndskill then
+   scndskill:updatecd()
+ end
 	
 	--checking bounds
 	if ship.x>120 then
@@ -560,10 +569,12 @@ function update_store()
 	btnreleased()
 	if btnp(⬅️) or btnp(⬆️) then
 		option-=1
+		sfx(16)
 	end
 	
 	if btnp(➡️) or btnp(⬇️) then
 		option+=1
+		sfx(16)
 	end
 	
 	if btnrelea and btnp(❎) then
@@ -819,24 +830,31 @@ function spawnenemies(total)
 	end
 end
 -->8
---store screen that shows every
---5 waves
+--store screen
+--shows every 5 waves
 function init_store()
 	cls(2)
 	mode="store"
 	music(2)
-	items={}
 	option=4
-	options={
-		{act="item",spr=25,x=20,y=30,
-			cost=10,desc="dash"},
-		{act="item",spr=25,x=55,y=30,
-			cost=10,desc="dash"},
-		{act="item",spr=25,x=90,y=30,
-			cost=10,desc="dash"},
-		{act="continue",x=90,y=120,
-		w=1,h=1}
-	}
+	options={}
+	--todo
+	included={}
+	for i=1,min(#items,3) do
+		local it=rnd(items)
+		if i==1 then
+			it.x=20
+		elseif i==2 then
+			it.x=55
+		else
+			it.x=90
+		end
+		add(options,it)
+	end
+	add(options,
+			{act="continue"}	
+	)
+
 end
 
 function exit_store()
@@ -880,10 +898,56 @@ local selopt=options[option]
 			del(options,selopt)
 			option=#options
 			sfx(17)
+			if selopt.acttype=="skill" do
+				scndskill=selopt
+			end
 		else
 			sfx(18)	
 		end 
 	end
+end
+-->8
+--items/powers
+scndskill=nil
+
+items={
+	{
+		acttype="skill",
+		act="item",spr=25,x=55,
+		y=30,cost=10,desc="dash",
+		cooldown=0,
+		use=function(self)
+			if self.cooldown==0 then
+				ship.smultip=2
+				self.cooldown=20
+			end
+		end
+		,
+		updatecd=function(self)
+			if self.cooldown>0 then
+				self.cooldown-=1
+				if self.cooldown<=0 then
+					self.finish()
+				end
+			end
+		end,
+		finish=function()
+			ship.smultip=1
+		end
+		}
+}
+
+
+function scndact()
+	for myit in all(items) do
+		if myit.acttype=="skill" do
+			myit:use()
+		end
+	end
+end
+
+function dash()
+	
 end
 __gfx__
 00055000000550000005500000000008000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
